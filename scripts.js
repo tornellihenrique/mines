@@ -1,6 +1,7 @@
 // Mines game made by Henrique Tornelli Duarte :)
 
 const size = 10;
+let gameEnded = false;
 // const size = Number(prompt('Board size', '10'));
 
 const mines = getMines();
@@ -17,75 +18,129 @@ class Tile {
 
 const tiles = [];
 
-for (let i=0; i<size; i++) {
-	const col = [];
-	
-	for (let j=0; j<size; j++) {
-		col.push({
-			x: i,
-			y: j,
-			mine: hasMine(i, j),
-			clicked: false,
-			minesAround: 0,
-			getTilesAround: function() {
-				const t = [];
-				
-				for (let i=this.x-1; i<=this.x+1; i++) {
-					for (let j=this.y-1; j<=this.y+1; j++) {
-						console.log(i, j);
-						if (i >= 0 && i < size && j >= 0 && j < size && i != this.x && j != this.y)
-							t.push([i, j]);
-					}
-				}
-				
-				return t;
-			}
-		});
-	}
-	
-	tiles.push(col);
+for (let i = 0; i < size; i++) {
+  const col = [];
+
+  for (let j = 0; j < size; j++) {
+    col.push({
+      x: i,
+      y: j,
+      mine: hasMine(i, j),
+      clicked: false,
+      exploded: false,
+      minesAround: 0,
+      getTilesAround: function () {
+        const t = [];
+
+        for (let i = this.x - 1; i <= this.x + 1; i++) {
+          for (let j = this.y - 1; j <= this.y + 1; j++) {
+            if (
+              i >= 0 &&
+              i < size &&
+              j >= 0 &&
+              j < size &&
+              (i != this.x || j != this.y)
+            )
+              t.push([i, j]);
+          }
+        }
+
+        return t;
+      },
+    });
+  }
+
+  tiles.push(col);
 }
 
 renderBoard();
 
 function renderBoard() {
-	$('.board').empty();
-	
-	let str = '';
-	
-	for (let i=0; i<size; i++) {
-		str += '<tr>';
-		
-		for (let j=0; j<size; j++) {
-			const t = tiles[i][j];
-			
-			str += `<td><button class="tile${t.mine ? ' mine' : ''}" onclick="handleClick(${i}, ${j})"></button></td>`;
-		}
-		
-		str += '</tr>';
-	}
-	
-	$('.board').append(str);
+  $('.board').empty();
+
+  let str = '';
+
+  for (let i = 0; i < size; i++) {
+    str += '<tr>';
+
+    for (let j = 0; j < size; j++) {
+      const t = tiles[i][j];
+
+      str += `<td><button class="tile${t.mine && t.clicked ? ' mine' : ''}${
+        t.clicked ? ' clicked' : ''
+      }${t.exploded ? ' exploded' : ''}${t.clicked ? ' clicked' : ''}${
+        t.clicked && !t.mine && t.minesAround ? ' num' : ''
+      }" onclick="onClick(${i}, ${j})">
+	  	${t.clicked && !t.mine && t.minesAround ? t.minesAround : ''}
+	  </button></td>`;
+    }
+
+    str += '</tr>';
+  }
+
+  $('.board').append(str);
 }
 
-function handleClick(x, y) {
-	const t = tiles[x][y];
-	
-	console.log(t.getTilesAround());
+function clickAll() {
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      const tile = tiles[i][j];
+
+      tile.clicked = true;
+    }
+  }
+}
+
+function handle(x, y) {
+  const tile = tiles[x][y];
+
+  if (tile.clicked) return;
+  tile.clicked = true;
+
+  if (tile.mine) {
+    tile.exploded = true;
+
+    gameEnded = true;
+
+    clickAll();
+
+    return;
+  }
+
+  let minesAround = 0;
+
+  for (let [i, j] of tile.getTilesAround()) {
+    const t = tiles[i][j];
+
+    if (t.clicked) continue;
+
+    if (t.mine) minesAround++;
+    else handle(i, j);
+  }
+
+  tile.minesAround = minesAround;
+}
+
+function onClick(x, y) {
+  if (gameEnded) return;
+
+  handle(x, y);
+
+  renderBoard();
 }
 
 function hasMine(x, y) {
-	return !!mines.find(m => m[0] == x && m[1] == y);
+  return !!mines.find((m) => m[0] == x && m[1] == y);
 }
 
 function getMines() {
-	const m = [];
+  const m = [];
 
-	for (let i=0; i<size; i++) {
-		m.push([genNum(0, size), genNum(0, size)]);
-	}
-	
-	return m;
+  for (let i = 0; i < size; i++) {
+    m.push([genNum(0, size), genNum(0, size)]);
+  }
+
+  return m;
 }
 
 function genNum(min, max) {
