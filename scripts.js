@@ -16,10 +16,12 @@ for (let i = 0; i < size; i++) {
       x: i,
       y: j,
       mine: function () {
-	const x = this.x;
-	const y = this.y;
+        const x = this.x;
+        const y = this.y;
 
-        return !!mines.find(function (m) { return m[0] == x && m[1] == y; })
+        return !!mines.find(function (m) {
+          return m[0] == x && m[1] == y;
+        });
       },
       clicked: false,
       exploded: false,
@@ -133,12 +135,13 @@ function handle(x, y) {
     tile.clicked = true;
 
     if (!addedMines) {
-	addedMines = true;
+      addedMines = true;
 
-	createMines(x, y);
+      createMines(x, y);
     }
 
-    if (!tile.mine() && !tile.minesAround()) queue.push(...tile.getTilesAround());
+    if (!tile.mine() && !tile.minesAround())
+      queue.push(...tile.getTilesAround());
   }
 }
 
@@ -157,16 +160,18 @@ function createMines(x, y) {
     const mine = [genNum(0, size), genNum(0, size)];
 
     if (
-	(x == mine[0] && y == mine[1])
-	||
-	tiles[x][y].getTilesAround(2).find(function ([a, b]) { return a == mine[0] && b == mine[1]; })
-	||
-	mines.find(function ([a, b]) { return a == mine[0] && b == mine[1]; })
+      (x == mine[0] && y == mine[1]) ||
+      tiles[x][y].getTilesAround(2).find(function ([a, b]) {
+        return a == mine[0] && b == mine[1];
+      }) ||
+      mines.find(function ([a, b]) {
+        return a == mine[0] && b == mine[1];
+      })
     ) {
-	i--;
-	continue;
+      i--;
+      continue;
     }
-    
+
     mines.push(mine);
   }
 }
