@@ -3,7 +3,8 @@
 let gameEnded = false;
 let addedMines = false;
 
-const size = Number(prompt('Board size', '10')) || 10;
+const size = 10;
+// const size = Number(prompt('Board size', '10')) || 10;
 
 const tiles = [];
 let mines = [];
@@ -15,16 +16,10 @@ for (let i = 0; i < size; i++) {
     col.push({
       x: i,
       y: j,
-      mine: function () {
-        const x = this.x;
-        const y = this.y;
-
-        return !!mines.find(function (m) {
-          return m[0] == x && m[1] == y;
-        });
-      },
+      mine: false,
       clicked: false,
       exploded: false,
+      flag: false,
       getTilesAround: function (d = 1) {
         const t = [];
 
@@ -57,12 +52,23 @@ for (let i = 0; i < size; i++) {
             ) {
               const t = tiles[i][j];
 
-              if (t.mine()) q++;
+              if (t.mine) q++;
             }
           }
         }
 
         return q;
+      },
+      getClasses: function () {
+        const c = ['tile'];
+
+        if (this.clicked) c.push('clicked');
+        if (this.mine && this.clicked && !this.flag) c.push('mine');
+        if (this.flag) c.push('flag');
+        if (this.exploded) c.push('exploded');
+        if (this.clicked && !this.mine && !this.flag && this.minesAround()) c.push('num');
+
+        return c.join(' ');
       },
     });
   }
@@ -84,15 +90,12 @@ function renderBoard() {
       const t = tiles[i][j];
 
       const minesAround = t.minesAround();
-      const mine = t.mine();
 
-      str += `<td><button class="tile${mine && t.clicked ? ' mine' : ''}${
-        t.clicked ? ' clicked' : ''
-      }${t.exploded ? ' exploded' : ''}${
-        t.clicked && !mine && minesAround ? ' num' : ''
-      }" onclick="onClick(${i}, ${j})">
-	  	${t.clicked && !mine && minesAround ? minesAround : ''}
-	  </button></td>`;
+      const id = `tile-${i}-${j}`;
+
+      str += `<td><button class="${t.getClasses()}" id="${id}" onmousedown="onClick(${i}, ${j}, event)">
+        ${t.clicked && !t.mine && minesAround ? minesAround : ''}
+      </button></td>`;
     }
 
     str += '</tr>';
@@ -114,7 +117,11 @@ function clickAll() {
 function handle(x, y) {
   const t = tiles[x][y];
 
-  if (t.mine()) {
+  if (t.flag) {
+    return;
+  }
+
+  if (t.mine) {
     t.exploded = true;
     gameEnded = true;
     clickAll();
@@ -129,7 +136,7 @@ function handle(x, y) {
 
     const tile = tiles[i][j];
 
-    if (tile.mine()) continue;
+    if (tile.mine) continue;
 
     if (tile.clicked) continue;
     tile.clicked = true;
@@ -140,15 +147,29 @@ function handle(x, y) {
       createMines(x, y);
     }
 
-    if (!tile.mine() && !tile.minesAround())
-      queue.push(...tile.getTilesAround());
+    if (!tile.mine && !tile.minesAround()) queue.push(...tile.getTilesAround());
   }
 }
 
-function onClick(x, y) {
+function handleFlag(x, y) {
+  const t = tiles[x][y];
+
+  if (t.clicked) return;
+
+  t.flag = !t.flag;
+}
+
+function onClick(x, y, { which }) {
   if (gameEnded) return;
 
-  handle(x, y);
+  if (which == 1) handle(x, y);
+  if (which == 3) handleFlag(x, y);
+
+  if (checkWin()) {
+    alert('Nice');
+
+    clickAll();
+  }
 
   renderBoard();
 }
@@ -172,8 +193,26 @@ function createMines(x, y) {
       continue;
     }
 
+    tiles[mine[0]][mine[1]].mine = true;
+
     mines.push(mine);
   }
+}
+
+function checkWin() {
+  let notClickedCount = 0;
+  let correctFlagCount = 0;
+
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      const t = tiles[i][j];
+
+      if (!t.clicked) notClickedCount++;
+      if (t.mine && t.flag) correctFlagCount++;
+    }
+  }
+
+  return notClickedCount == mines.length || correctFlagCount == mines.length;
 }
 
 function genNum(min, max) {

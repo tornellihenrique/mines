@@ -29,6 +29,16 @@
 	background-size: cover;
 }
 
+.board .tile.flag {
+	background-image: url("flag.png");
+	background-repeat: no-repeat;
+	background-size: cover;
+}
+
 .board .tile.mine.exploded {
+	background-color: #f00;
+}
+
+.board .tile.mine.flag {
 	background-color: #f00;
 }
